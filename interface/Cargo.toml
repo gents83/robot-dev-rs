@@ -1,0 +1,11 @@
+[package]
+name = "interface"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brain = { path = "../brain" }
+kinematics = { path = "../kinematics" }
+tokio = { version = "1.0", features = ["full"] }
+log = "0.4"
+env_logger = "0.10"
