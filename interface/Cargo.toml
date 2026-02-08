@@ -9,3 +9,8 @@ kinematics = { path = "../kinematics" }
 tokio = { version = "1.0", features = ["full"] }
 log = "0.4"
 env_logger = "0.10"
+zenoh = "1.0"
+zenoh-plugin-ros2dds = "1.0"
+edgefirst-schemas = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+cdr = "0.2"
