@@ -1,0 +1,8 @@
+[package]
+name = "brain"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+kinematics = { path = "../kinematics" }
+log = "0.4"
