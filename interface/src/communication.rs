@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use kinematics::JointState as KinematicsJointState;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+const ROS2_CDR_HEADER: [u8; 4] = [0x00, 0x01, 0x00, 0x00];
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JointState {
     pub header: Header,
@@ -52,8 +54,8 @@ impl CommunicationLayer {
 
     pub async fn publish_joint_command(&self, joints: &[KinematicsJointState]) -> Result<(), Box<dyn std::error::Error>> {
         let msg = self.convert_to_ros_joint_state(joints);
-        // Prepend ROS 2 CDR encapsulation header (Little Endian: 0x00 0x01 0x00 0x00)
-        let mut payload = vec![0x00, 0x01, 0x00, 0x00];
+        // Prepend ROS 2 CDR encapsulation header
+        let mut payload = ROS2_CDR_HEADER.to_vec();
         let data = cdr::serialize::<_, _, cdr::CdrLe>(&msg, cdr::Infinite)?;
         payload.extend(data);
         self.session.put(&self.joint_command_key, payload).await.map_err(|e| e.to_string())?;
@@ -68,10 +70,10 @@ impl CommunicationLayer {
         tokio::spawn(async move {
             while let Ok(sample) = subscriber.recv_async().await {
                  let payload = sample.payload().to_bytes();
-                 // Check and skip ROS 2 CDR encapsulation header (4 bytes)
-                 if payload.len() > 4 {
+                 // Check and skip ROS 2 CDR encapsulation header
+                 if payload.len() > ROS2_CDR_HEADER.len() {
                      // We assume Little Endian for simplicity
-                     let mut deserializer = cdr::Deserializer::<_, _, cdr::LittleEndian>::new(&payload[4..], cdr::Infinite);
+                     let mut deserializer = cdr::Deserializer::<_, _, cdr::LittleEndian>::new(&payload[ROS2_CDR_HEADER.len()..], cdr::Infinite);
                      match serde::Deserialize::deserialize(&mut deserializer) {
                          Ok(msg) => {
                              let msg: JointState = msg;
@@ -96,8 +98,8 @@ impl CommunicationLayer {
         tokio::spawn(async move {
             while let Ok(sample) = subscriber.recv_async().await {
                 let payload = sample.payload().to_bytes();
-                if payload.len() > 4 {
-                    let mut deserializer = cdr::Deserializer::<_, _, cdr::LittleEndian>::new(&payload[4..], cdr::Infinite);
+                if payload.len() > ROS2_CDR_HEADER.len() {
+                    let mut deserializer = cdr::Deserializer::<_, _, cdr::LittleEndian>::new(&payload[ROS2_CDR_HEADER.len()..], cdr::Infinite);
                     match serde::Deserialize::deserialize(&mut deserializer) {
                         Ok(msg) => {
                             let msg: Image = msg;
