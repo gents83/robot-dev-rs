@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 nalgebra = "0.33"
+rs-opw-kinematics = { version = "1.8", default-features = false }

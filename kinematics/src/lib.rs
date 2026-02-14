@@ -19,6 +19,8 @@ impl Default for JointState {
 
 pub type Position = Vector3<f64>;
 
+pub mod opw_kinematics;
+
 pub trait ForwardKinematics {
     fn forward_kinematics(&self, joints: &[JointState]) -> Isometry3<f64>;
 }
