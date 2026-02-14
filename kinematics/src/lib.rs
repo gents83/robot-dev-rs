@@ -68,4 +68,27 @@ mod tests {
         assert!((pose.translation.vector.x).abs() < 1e-6);
         assert!((pose.translation.vector.y - 1.0).abs() < 1e-6);
     }
+
+    #[test]
+    fn test_simple_arm_fk_empty_joints() {
+        let arm = SimpleArm::new(1.0);
+        let joints = vec![];
+        let pose = arm.forward_kinematics(&joints);
+
+        assert_eq!(pose, Isometry3::identity());
+    }
+
+    #[test]
+    fn test_simple_arm_fk_multiple_joints() {
+        let arm = SimpleArm::new(1.0);
+        let joints = vec![
+            JointState { angle: PI / 2.0, ..Default::default() },
+            JointState { angle: PI, ..Default::default() },
+        ];
+        let pose = arm.forward_kinematics(&joints);
+
+        // Should only use the first joint
+        assert!((pose.translation.vector.x).abs() < 1e-6);
+        assert!((pose.translation.vector.y - 1.0).abs() < 1e-6);
+    }
 }
