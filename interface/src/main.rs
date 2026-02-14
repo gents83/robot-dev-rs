@@ -1,11 +1,11 @@
 mod communication;
 
 use brain::RobotBrain;
+use communication::CommunicationLayer;
 use kinematics::JointState;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
-use communication::CommunicationLayer;
-use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,25 +29,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // CommunicationLayer is Arc-ed. But wait, subscribe takes &self.
     // The callback must be Send + Sync + 'static.
 
-    comms.subscribe_joint_state(|joints| {
-        // In a real system, we'd update internal state here
-        // For now, just log
-        // using println! instead of log::info! to see output in simulation if env_logger not configured
-        println!("Received joint state update: {} joints", joints.len());
-        if let Some(first) = joints.first() {
-             println!("Joint 0 angle: {:.2}", first.angle);
-        }
-    }).await?;
+    comms
+        .subscribe_joint_state(|joints| {
+            // In a real system, we'd update internal state here
+            // For now, just log
+            // using println! instead of log::info! to see output in simulation if env_logger not configured
+            println!("Received joint state update: {} joints", joints.len());
+            if let Some(first) = joints.first() {
+                println!("Joint 0 angle: {:.2}", first.angle);
+            }
+        })
+        .await?;
 
     // Subscribe to CameraImage
-    comms.subscribe_camera_image(|image| {
-        println!("Received image: {}x{} {}", image.width, image.height, image.encoding);
-    }).await?;
+    comms
+        .subscribe_camera_image(|image| {
+            println!(
+                "Received image: {}x{} {}",
+                image.width, image.height, image.encoding
+            );
+        })
+        .await?;
 
     let mut brain = RobotBrain::new();
 
     // Simulate a target
-    let target = JointState { angle: 1.57, ..Default::default() };
+    let target = JointState {
+        angle: 1.57,
+        ..Default::default()
+    };
     println!("Planning motion to: {:?}", target);
     brain.plan_motion(target);
 
