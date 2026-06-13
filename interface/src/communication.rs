@@ -89,7 +89,7 @@ impl CommunicationLayer {
                         let joints = Self::convert_from_ros_joint_state(&msg);
                         callback(joints);
                     }
-                    Err(e) => eprintln!("Failed to process JointState: {}", e),
+                    Err(e) => log::error!("Failed to process JointState: {}", e),
                 }
             }
         });
@@ -116,7 +116,7 @@ impl CommunicationLayer {
                     Ok(msg) => {
                         callback(msg);
                     }
-                    Err(e) => eprintln!("Failed to process Image: {}", e),
+                    Err(e) => log::error!("Failed to process Image: {}", e),
                 }
             }
         });
