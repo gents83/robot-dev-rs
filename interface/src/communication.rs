@@ -58,8 +58,9 @@ impl CommunicationLayer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let msg = self.convert_to_ros_joint_state(joints);
         // Prepend ROS 2 CDR encapsulation header (Little Endian: 0x00 0x01 0x00 0x00)
-        let mut payload = ROS2_CDR_HEADER_LE.to_vec();
         let data = cdr::serialize::<_, _, cdr::CdrLe>(&msg, cdr::Infinite)?;
+        let mut payload = Vec::with_capacity(ROS2_CDR_HEADER_LE.len() + data.len());
+        payload.extend_from_slice(&ROS2_CDR_HEADER_LE);
         payload.extend(data);
         self.session
             .put(&self.joint_command_key, payload)
@@ -148,6 +149,12 @@ impl CommunicationLayer {
         msg.header.stamp = Time::new(now.as_secs() as i32, now.subsec_nanos());
         msg.header.frame_id = "robot_base".to_string();
 
+        let len = joints.len();
+        msg.name.reserve(len);
+        msg.position.reserve(len);
+        msg.velocity.reserve(len);
+        msg.effort.reserve(len);
+
         for (i, joint) in joints.iter().enumerate() {
             msg.name.push(format!("joint_{}", i + 1));
             msg.position.push(joint.angle);
@@ -158,8 +165,8 @@ impl CommunicationLayer {
     }
 
     fn convert_from_ros_joint_state(msg: &JointState) -> Vec<KinematicsJointState> {
-        let mut joints = Vec::new();
         let len = msg.position.len();
+        let mut joints = Vec::with_capacity(len);
         for i in 0..len {
             joints.push(KinematicsJointState {
                 angle: msg.position[i],
@@ -186,8 +193,9 @@ mod tests {
     #[test]
     fn test_deserialize_ros_payload_valid() {
         let msg = JointState::default();
-        let mut payload = ROS2_CDR_HEADER_LE.to_vec();
         let data = cdr::serialize::<_, _, cdr::CdrLe>(&msg, cdr::Infinite).unwrap();
+        let mut payload = Vec::with_capacity(ROS2_CDR_HEADER_LE.len() + data.len());
+        payload.extend_from_slice(&ROS2_CDR_HEADER_LE);
         payload.extend(data);
 
         let result: Result<JointState, _> = CommunicationLayer::deserialize_ros_payload(&payload);
